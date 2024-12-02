@@ -1,0 +1,301 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+local Window = OrionLib:MakeWindow({
+    Name = "Totem Hub - Key Validation",
+    HidePremium = false,
+    SaveConfig = false
+})
+
+local KeyTab = Window:MakeTab({
+    Name = "Enter Key",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local MainTab
+local AutoTotemTab
+local InstructionsTab
+local ActionsTab
+
+local secretKey = "totemdupeohmaygawd"  -- The secret key you want to use
+local keyValidated = false  -- Flag to track key validation status
+
+local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local backpack = player.Backpack
+local mouse = player:GetMouse()
+
+local rods = {}
+for _, rod in pairs(game:GetService("ReplicatedStorage").resources.items.rods:GetChildren()) do
+    table.insert(rods, rod.Name)
+end
+
+local totemOptions = {
+    "Smokescreen Totem",
+    "Tempest Totem",
+    "Sundial Totem",
+    "Windset Totem",
+    "Meteor Totem",
+    "Eclipse Totem",
+    "Aurora Totem"
+}
+
+local selectedDayTotem = "Tempest Totem"
+local selectedNightTotem = "Tempest Totem"
+local autoTotemEnabledDay = false
+local autoTotemEnabledNight = false
+local lastTotemPopTimeDay = 0
+local lastTotemPopTimeNight = 0
+
+local totemLocations = {
+    ["Smokescreen Totem"] = {2792, 139, -630},
+    ["Tempest Totem"] = {39, 135, 1945},
+    ["Sundial Totem"] = {-1149, 136, -1077},
+    ["Windset Totem"] = {2850, 179, 2703},
+    ["Meteor Totem"] = {-1946, 275, 232},
+    ["Eclipse Totem"] = {5967, 275, 837},
+    ["Aurora Totem"] = {-1812, -136, -3280}
+}
+
+local selectedRelic = "RelicName"  -- Set the name of the relic you're using
+
+-- Function to equip a rod
+local function equipRod()
+    for _, rod in pairs(rods) do
+        if character:FindFirstChild(rod) then
+            print("Rod already equipped.")
+            return
+        end
+    end
+    for _, rod in pairs(rods) do
+        if backpack:FindFirstChild(rod) then
+            backpack[rod].Parent = character
+            print("Rod equipped: " .. rod)
+            return
+        end
+    end
+    print("No rod found in inventory.")
+end
+
+-- Placeholder function for enchanting a relic
+local function enchantRelic(relic)
+    print("Relic enchanted: " .. relic)
+end
+
+-- Function to unequip all tools
+local function unequipAll()
+    for _, item in pairs(character:GetChildren()) do
+        if item:IsA("Tool") then
+            item.Parent = backpack
+        end
+    end
+    print("Unequipped all items.")
+end
+
+-- Function to equip a tool
+local function equipTool(tool)
+    for _, v in pairs(character:GetChildren()) do
+        if v.Name == tool then
+            return
+        end
+    end
+    for _, v in pairs(backpack:GetChildren()) do
+        if v.Name == tool then
+            v.Parent = character
+            return
+        end
+    end
+    print("Something went wrong.")
+end
+
+local function unequipTool(tool)
+    for _, v in pairs(character:GetChildren()) do
+        if v.Name == tool then
+            v.Parent = backpack
+            print("Item removed.")
+            return
+        end
+    end
+    print("Item removal failed.")
+end
+
+-- Function to teleport to totem location
+local function teleportTo(x, y, z)
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(x, y, z)
+end
+
+-- Function to validate the key and show the full GUI if correct
+KeyTab:AddTextbox({
+    Name = "Enter Key",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(text)
+        if text == secretKey then
+            keyValidated = true
+            -- Creating main tabs after key validation
+            MainTab = Window:MakeTab({
+                Name = "Totems",
+                Icon = "rbxassetid://4483345998",
+                PremiumOnly = false
+            })
+
+            AutoTotemTab = Window:MakeTab({
+                Name = "Auto Totem",
+                Icon = "rbxassetid://4483345998",
+                PremiumOnly = false
+            })
+
+            InstructionsTab = Window:MakeTab({
+                Name = "Instructions",
+                Icon = "rbxassetid://4483345998",
+                PremiumOnly = false
+            })
+
+            ActionsTab = Window:MakeTab({
+                Name = "Actions",
+                Icon = "rbxassetid://4483345998",
+                PremiumOnly = false
+            })
+
+            OrionLib:MakeNotification({
+                Name = "Key Validated",
+                Content = "Key is correct. Totem Dupe is now available.",
+                Image = "rbxassetid://4483345998",
+                Time = 3
+            })
+        else
+            OrionLib:MakeNotification({
+                Name = "Invalid Key",
+                Content = "The key you entered is incorrect.",
+                Image = "rbxassetid://4483345998",
+                Time = 3
+            })
+        end
+    end
+})
+
+-- Wait until the key is validated to display the rest of the GUI
+while not keyValidated do
+    wait(0.1)
+end
+
+-- Main Totem Tab Elements
+MainTab:AddDropdown({
+    Name = "Select Totem",
+    Default = "Tempest Totem",
+    Options = totemOptions,
+    Callback = function(Value)
+        selectedTotem = Value
+    end
+})
+
+MainTab:AddButton({
+    Name = string.char(0xE2, 0x9C, 0x94),
+    Callback = function()
+        equipTool(selectedTotem)
+        task.wait(0.5)
+        mouse1press()
+        task.wait(0.05)
+        mouse1release()
+        equipRod()  -- Equip rod after using the totem
+        task.wait(1.5)
+        unequipTool(selectedTotem)  -- Unequip the totem after use
+    end
+})
+
+MainTab:AddButton({
+    Name = "Teleport to Selected Totem",
+    Callback = function()
+        local location = totemLocations[selectedTotem]
+        if location then
+            teleportTo(location[1], location[2], location[3])
+        else
+            print("Something went wrong.")
+        end
+    end
+})
+
+-- Auto Totem Tab Elements
+AutoTotemTab:AddDropdown({
+    Name = "Select Day Totem",
+    Default = selectedDayTotem,
+    Options = totemOptions,
+    Callback = function(Value)
+        selectedDayTotem = Value
+    end
+})
+
+AutoTotemTab:AddDropdown({
+    Name = "Select Night Totem",
+    Default = selectedNightTotem,
+    Options = totemOptions,
+    Callback = function(Value)
+        selectedNightTotem = Value
+    end
+})
+
+AutoTotemTab:AddToggle({
+    Name = "Enable Auto Day Totem",
+    Default = false,
+    Callback = function(Value)
+        autoTotemEnabledDay = Value
+    end
+})
+
+AutoTotemTab:AddToggle({
+    Name = "Enable Auto Night Totem",
+    Default = false,
+    Callback = function(Value)
+        autoTotemEnabledNight = Value
+    end
+})
+
+-- Actions Tab Elements
+ActionsTab:AddButton({
+    Name = "Equip Rod & Enchant Relic",
+    Callback = function()
+        equipRod()
+        enchantRelic(selectedRelic)
+    end
+})
+
+ActionsTab:AddButton({
+    Name = "Unequip All",
+    Callback = function()
+        unequipAll()
+    end
+})
+
+-- Button to teleport to Merlin's location
+ActionsTab:AddButton({
+    Name = "Teleport to Merlin Location",
+    Callback = function()
+        local merlinLocation = {-932, 223, -985}  -- Merlin's coordinates
+        teleportTo(merlinLocation[1], merlinLocation[2], merlinLocation[3])
+    end
+})
+
+-- Button to teleport to Enchant Altar location
+ActionsTab:AddButton({
+    Name = "Teleport to Enchant Altar",
+    Callback = function()
+        local enchantAltarLocation = {1308, -802, -80}  -- Enchant Altar coordinates
+        teleportTo(enchantAltarLocation[1], enchantAltarLocation[2], enchantAltarLocation[3])
+    end
+})
+
+-- Instructions Tab Elements
+InstructionsTab:AddLabel("How to Duplicate Items:")
+InstructionsTab:AddLabel("1. Buy the totem you want to use.")
+InstructionsTab:AddLabel("2. Select the totem in Totems.")
+InstructionsTab:AddLabel("3. Press the ✅ emoji.")
+InstructionsTab:AddLabel("4. You can also teleport to the selected totem using the button.")
+InstructionsTab:AddLabel("")
+InstructionsTab:AddLabel("How to Duplicate Relics:")
+InstructionsTab:AddLabel("1. Hold your relic and equip a rod.")
+InstructionsTab:AddLabel("2. Press the Equip Rod & Enchant Relic button.")
+InstructionsTab:AddLabel("3. This will equip the rod and enchant the relic.")
+InstructionsTab:AddLabel("")
+InstructionsTab:AddLabel("Important:")
+InstructionsTab:AddLabel("Make sure to validate your key before accessing the features.")
